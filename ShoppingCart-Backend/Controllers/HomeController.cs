@@ -146,6 +146,7 @@ namespace ShoppingCart_Backend.Controllers
         [HttpGet("/PlaceOrder")]
         public async Task<IActionResult> PlaceOrder([FromQuery] string emailId)
         {
+
             if (emailId != null)
             {
                 using (_context)
