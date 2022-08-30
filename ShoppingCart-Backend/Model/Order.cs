@@ -15,5 +15,6 @@ namespace ShoppingCart_Backend.Model
        
         public bool purchased { get; set; }
         public DateTime purchaseDT { get; set; }
+        public string paymentMode { get; set; }
     }
 }

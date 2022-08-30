@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ShoppingCart_Backend.Data;
 
@@ -11,9 +12,10 @@ using ShoppingCart_Backend.Data;
 namespace ShoppingCart_Backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20220826103645_addItemType")]
+    partial class addItemType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -31,6 +33,7 @@ namespace ShoppingCart_Backend.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
                     b.Property<string>("Time")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("cost")
@@ -49,10 +52,6 @@ namespace ShoppingCart_Backend.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("itemType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("itemsubType")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -80,10 +79,6 @@ namespace ShoppingCart_Backend.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("itemName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("paymentMode")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 

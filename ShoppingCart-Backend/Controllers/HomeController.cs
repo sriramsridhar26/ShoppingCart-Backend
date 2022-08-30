@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using ShoppingCart_Backend.Data;
 using ShoppingCart_Backend.DTO;
 using ShoppingCart_Backend.Model;
+using System.IO;
 
 namespace ShoppingCart_Backend.Controllers
 {
@@ -27,21 +28,15 @@ namespace ShoppingCart_Backend.Controllers
             else
             {
                 IEnumerable<User> userc = _context.users
-                                                  .Where(x => x.emailId == userd.emailId);
+                                                  .Where(x => x.emailId == userd.emailId && x.password == userd.password);
                 if (userc == null)
                 {
-                    return BadRequest("User Not Found");
-                }
-                else if (!userc.Any(x => x.password == userd.password))
-                {
-                    return BadRequest("Incorrect Password");
+                    return BadRequest("Username or Password Incorrect");
                 }
                 else
                 {
 
                     return Ok(userc.Select(x => x.customerName));
-
-                    //return Ok(_context.packs);
                 }
             }
 
@@ -65,8 +60,14 @@ namespace ShoppingCart_Backend.Controllers
         [HttpGet("/GetItems")]
         public async Task<IActionResult> GetItems()
         {
-            IEnumerable<Item> itemd = _context.items;
-            if(itemd != null)
+            List<Item> itemd = _context.items.ToList();
+            foreach (Item item in itemd)
+            {
+                byte[] bytes = System.IO.File.ReadAllBytes(item.imglink);
+                item.imglink = Convert.ToBase64String(bytes);
+
+            }
+            if (itemd != null)
             {
                 return Ok(itemd);
             }
@@ -80,7 +81,8 @@ namespace ShoppingCart_Backend.Controllers
         [HttpGet("/GetOrders")]
         public async Task<IActionResult> GetOrder([FromQuery] string emailId)
         {
-            if(emailId == null ) {
+            if(emailId != null ) {
+               // IEnumerable<Order> orders = _context.orders.Where(x => x.emailId == emailId);
                 return Ok(_context.orders.Where(x => x.emailId == emailId));
 
             }
@@ -92,31 +94,43 @@ namespace ShoppingCart_Backend.Controllers
         }
 
         [HttpPost("/AddToCart")]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddToCart([FromBody] AddtocartDTO addtocart)
         {
-            Item item = _context.items
-                                      .Where(x => x.Id == addtocart.itemId)
-                                      .SingleOrDefault() ;
-            if (item != null)
+            var temp1 = _context.orders.Where(x => x.itemId == addtocart.itemId && x.purchased == false).FirstOrDefault();
+            if (temp1 != null)
             {
-                var t = new Order
+                using (_context)
                 {
-                    emailId = addtocart.emailId,
-                    itemId = addtocart.itemId,
-                    itemName = item.itemName,
-                    quantity = 1,
-                    cost = item.cost,
-                    purchased = false
-
-                };
-                _context.orders.Add(t);
-                _context.SaveChangesAsync();
+                    temp1.quantity += 1;
+                    _context.SaveChanges();
+                }
                 return Ok();
             }
             else
             {
-                return BadRequest("item does not exist");
+                Item item = _context.items
+                                          .Where(x => x.Id == addtocart.itemId)
+                                          .SingleOrDefault();
+                if (item != null)
+                {
+                    var t = new Order
+                    {
+                        emailId = addtocart.emailId,
+                        itemId = addtocart.itemId,
+                        itemName = item.itemName,
+                        quantity = 1,
+                        cost = item.cost,
+                        purchased = false
+
+                    };
+                    _context.orders.Add(t);
+                    _context.SaveChanges();
+                    return Ok();
+                }
+                else
+                {
+                    return BadRequest("item does not exist");
+                }
             }
 
         }
@@ -128,9 +142,23 @@ namespace ShoppingCart_Backend.Controllers
                 var items = _context.orders.Where(x => x.orderId == orderid).FirstOrDefault();
                 if (items != null)
                 {
-                    var t = _context.orders.Remove(items);
-                    _context.SaveChangesAsync();
-                    return Ok(Json("success"));
+                    if (items.quantity > 1)
+                    {
+                        using (_context)
+                        {
+                            items.quantity -=1;
+                            _context.SaveChanges();
+                        }
+                        
+                        return Ok(Json("success"));
+                    }
+                    else
+                    {
+                        var t = _context.orders.Remove(items);
+                        _context.SaveChangesAsync();
+                        return Ok(Json("success"));
+                    }
+
                 }
                 else
                 {
@@ -156,6 +184,7 @@ namespace ShoppingCart_Backend.Controllers
                     {
                         a.purchased = true;
                         a.purchaseDT = DateTime.Now;
+                        a.paymentMode = "card";
                     });
                     _context.SaveChanges();
                 }
@@ -168,6 +197,28 @@ namespace ShoppingCart_Backend.Controllers
             }
         }
 
+        [HttpGet("/Numberincart")]
+        public async Task<IActionResult> NumberinCart([FromQuery] string emailId)
+        {
+            if(emailId != null) 
+            {
+                int count = _context.orders.Where(p => p.emailId == emailId && p.purchased == false).Count();
+                return Ok(count);
+            }
+            else
+            {
+                return BadRequest();
+            }
 
+        }
+
+        [HttpGet("/Imagetest")]
+        public async Task<IActionResult> imgTest()
+        {
+            string Path = "C:/Users/Gideon/Desktop/IMG_20201026_231125.jpg";
+            byte[] ig = System.IO.File.ReadAllBytes(Path);
+            string img = Convert.ToBase64String(ig);
+            return Ok(img);
+        }
     }
 }
